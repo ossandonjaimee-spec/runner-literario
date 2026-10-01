@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Runner Literario 3D: El Dragón de los Libros</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0b0c10;color:#fff;font-family:'Segoe UI',Tahoma,sans-serif;overflow:hidden;touch-action:none}
+#cv{position:absolute;inset:0}
+#hud{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;gap:8px;justify-content:space-between;pointer-events:none;z-index:10}
+.card{background:rgba(15,23,42,.8);border:2px solid #6366f1;border-radius:12px;padding:6px 14px;backdrop-filter:blur(5px)}
+.t{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px}
+.v{font-size:20px;font-weight:700}
+#tag{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:100%;text-align:center;color:#e2e8f0;font-size:13px;text-shadow:0 2px 4px #000;pointer-events:none;z-index:10}
+.ov{position:absolute;inset:0;background:rgba(11,12,16,.8);display:flex;justify-content:center;align-items:center;z-index:100;backdrop-filter:blur(6px)}
+.box{background:#1e293b;border:3px solid #6366f1;border-radius:20px;padding:28px;max-width:520px;width:92%;text-align:center;box-shadow:0 10px 30px rgba(99,102,241,.3)}
+h1{margin:0 0 8px;color:#818cf8;font-size:28px}
+.sub{color:#94a3b8;margin:0 0 16px;font-size:15px}
+.btn{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:0;padding:13px 30px;font-size:18px;font-weight:700;border-radius:50px;cursor:pointer}
+.cr{margin-top:18px;padding-top:12px;border-top:1px solid #334155;color:#fbbf24;font-weight:600;font-size:14px}
+#quiz{display:none}
+.opt{display:block;width:100%;margin:8px 0;padding:12px 14px;background:#334155;color:#f8fafc;border:2px solid #475569;border-radius:10px;font-size:15px;cursor:pointer;text-align:left}
+.opt:hover{background:#4f46e5;border-color:#818cf8}
+#fb{margin-top:12px;font-weight:700;font-size:15px;min-height:22px}
+</style>
+</head>
+<body>
+<div id="cv"></div>
+<div id="hud">
+  <div class="card"><div class="t">Plumas</div><div class="v" id="sc">0</div></div>
+  <div class="card"><div class="t" id="bn">Bosque</div><div class="v" id="ds">0m</div></div>
+  <div class="card"><div class="t">Vidas</div><div class="v" id="lv">❤️❤️❤️</div></div>
+</div>
+<div id="tag">Desarrollado por Jaime Ossandón Fuentes</div>
+
+<div id="start" class="ov"><div class="box">
+  <h1 id="st">Runner Literario 3D</h1>
+  <p class="sub" id="ss">El Dragón de los Libros — Lenguaje 5.° y 6.° Básico</p>
+  <p style="color:#cbd5e1;font-size:14px;margin:0 0 20px">Flechas <b>◀ ▶</b> o <b>A/D</b> cambian de carril, <b>Espacio</b> o <b>▲</b> salta. En el móvil, desliza. ¡Cruza los portales para responder y cambiar de escenario!</p>
+  <button class="btn" onclick="startGame()">¡Comenzar Aventura!</button>
+  <div class="cr">Desarrollado por Jaime Ossandón Fuentes</div>
+</div></div>
+
+<div id="quiz" class="ov"><div class="box">
+  <h3 id="qc" style="color:#818cf8;margin:0"></h3>
+  <p id="qq" style="font-size:17px;line-height:1.4;margin:14px 0 16px"></p>
+  <div id="qo"></div><div id="fb"></div>
+</div></div>
+
+<script>
+const Q=[
+["GÉNERO NARRATIVO","¿Qué narrador cuenta la historia usando 'yo' o 'nosotros'?",["Omnisciente","Protagonista (1.ª persona)","Objetivo","Testigo"],1,"El narrador protagonista es parte de la historia y habla desde el 'yo'."],
+["GÉNERO LÍRICO","¿Cómo se llama la voz creada por el poeta para expresar sentimientos?",["Hablante lírico","Narrador","Dramaturgo","Lector"],0,"El hablante lírico transmite las emociones del poema."],
+["GÉNERO DRAMÁTICO","Las indicaciones entre paréntesis que guían la actuación son:",["Diálogos","Acotaciones","Escenas","Monólogos"],1,"Las acotaciones orientan gestos, vestuario y entradas."],
+["GÉNERO NARRATIVO","Relato tradicional que explica el origen del mundo o de seres mitológicos:",["Cuento","Leyenda","Mito","Fábula"],2,"Los mitos explican orígenes sagrados o del universo."],
+["GÉNERO LÍRICO","'Las estrellas nos miraban desde el cielo' es una:",["Metáfora","Personificación","Comparación","Hipérbole"],1,"Se le da una acción humana (mirar) a las estrellas."],
+["GÉNERO NARRATIVO","Relato breve con animales que deja una moraleja:",["Fábula","Mito","Novela","Poema"],0,"La fábula usa animales para dejar una enseñanza."],
+["GÉNERO LÍRICO","Un conjunto de versos se llama:",["Párrafo","Estrofa","Acto","Capítulo"],1,"Las estrofas agrupan los versos de un poema."],
+["GÉNERO DRAMÁTICO","Una obra de teatro se divide en:",["Estrofas","Capítulos","Actos y escenas","Versos"],2,"El texto dramático se organiza en actos, cuadros y escenas."],
+["GÉNERO NARRATIVO","¿Cómo se llama el momento de mayor tensión en un cuento?",["Inicio","Desenlace","Clímax","Marco"],2,"El clímax es el punto de mayor tensión del conflicto."],
+["GÉNERO LÍRICO","'Blanca como la nieve' es una:",["Comparación","Personificación","Onomatopeya","Rima"],0,"Compara dos elementos usando la palabra 'como'."]
+];
+
+const BIOMES=[
+{n:"Bosque",sky:["#5fb4e8","#e6f7d8"],fog:0xd3ecd0,gr:0x3f8a3c,tr:0x6b5443,ln:0xfde68a},
+{n:"Ciudad",sky:["#1b1f4b","#f59e7a"],fog:0x7a6690,gr:0x2c2f3b,tr:0x20232f,ln:0x38bdf8}
+];
+let scene,cam,ren,player,boy,aL,aR,lL,lR,scarf,ground,trackM,sun;
+const LX=[-2.5,0,2.5];
+let lane=1,tx=0,obs=[],items=[],portals=[],deco=[],lines=[];
+let score=0,dist=0,lives=3,playing=false,paused=false,speed=.35,bi=0,vy=0,py=0,qi=[];
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.7},o));
+const winTex=[0,1,2].map(()=>{const c=document.createElement('canvas');c.width=64;c.height=128;const g=c.getContext('2d');g.fillStyle='#161a2e';g.fillRect(0,0,64,128);for(let y=6;y<124;y+=14)for(let x=6;x<58;x+=14){g.fillStyle=Math.random()<.55?'#fde68a':'#2a3050';g.fillRect(x,y,8,9)}return new THREE.CanvasTexture(c)});
+
+function skyTex(a,b){const c=document.createElement('canvas');c.width=2;c.height=256;const g=c.getContext('2d'),gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,a);gr.addColorStop(1,b);g.fillStyle=gr;g.fillRect(0,0,2,256);return new THREE.CanvasTexture(c)}
+
+function makeTree(){
+  const g=new THREE.Group(),h=2+Math.random()*2;
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,h,6),M(0x6b4423));t.position.y=h/2;g.add(t);
+  const col=[0x2e7d32,0x388e3c,0x1b5e20][Math.floor(Math.random()*3)];
+  for(let i=0;i<3;i++){const c=new THREE.Mesh(new THREE.ConeGeometry(1.8-i*.4,2,7),M(col));c.position.y=h+i*1.1;g.add(c)}
+  return g}
+function makeBuilding(){
+  const w=3+Math.random()*3,h=6+Math.random()*16;
+  const tex=winTex[Math.floor(Math.random()*3)].clone();tex.needsUpdate=true;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(Math.ceil(w/3),Math.ceil(h/8));
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),new THREE.MeshStandardMaterial({map:tex,emissiveMap:tex,emissive:0xffffff,emissiveIntensity:.5}));
+  m.position.y=h/2;const g=new THREE.Group();g.add(m);return g}
+function addDeco(z,first){
+  [-1,1].forEach(s=>{
+    const o=bi===0?makeTree():makeBuilding();
+    o.position.set(s*(bi===0?7+Math.random()*9:9+Math.random()*3),0,z+Math.random()*4);
+    if(bi===0)o.scale.setScalar(.8+Math.random()*.6);
+    scene.add(o);deco.push(o)});
+}
+function clearDeco(){deco.forEach(d=>scene.remove(d));deco=[];for(let z=-95;z<8;z+=(bi===0?7:9))addDeco(z)}
+function setBiome(i){
+  bi=i;const b=BIOMES[i];
+  scene.background=skyTex(b.sky[0],b.sky[1]);scene.fog.color.setHex(b.fog);
+  ground.material.color.setHex(b.gr);trackM.material.color.setHex(b.tr);
+  lines.forEach(l=>l.material.color.setHex(b.ln));
+  sun.material.color.setHex(i?0xfff1c9:0xfffbe0);sun.position.set(i?-30:30,i?14:35,-90);
+  document.getElementById('bn').innerText=b.n;clearDeco()}
+
+function init(){
+  scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xd3ecd0,.018);
+  cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,140);cam.position.set(0,4,8);cam.lookAt(0,1.5,-5);
+  ren=new THREE.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setSize(innerWidth,innerHeight);ren.shadowMap.enabled=true;
+  document.getElementById('cv').appendChild(ren.domElement);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x334455,.8));
+  const d=new THREE.DirectionalLight(0xffffff,.7);d.position.set(10,20,10);d.castShadow=true;scene.add(d);
+  ground=new THREE.Mesh(new THREE.PlaneGeometry(300,240),M(0x3f8a3c));ground.rotation.x=-Math.PI/2;ground.position.set(0,-.02,-80);scene.add(ground);
+  trackM=new THREE.Mesh(new THREE.PlaneGeometry(8.4,240),M(0x6b5443,{roughness:.5}));trackM.rotation.x=-Math.PI/2;trackM.position.set(0,0,-80);trackM.receiveShadow=true;scene.add(trackM);
+  [-1.25,1.25].forEach(x=>{const l=new THREE.Mesh(new THREE.PlaneGeometry(.1,240),new THREE.MeshBasicMaterial({color:0xfde68a}));l.rotation.x=-Math.PI/2;l.position.set(x,.01,-80);scene.add(l);lines.push(l)});
+  sun=new THREE.Mesh(new THREE.SphereGeometry(5,20,20),new THREE.MeshBasicMaterial({color:0xfffbe0,fog:false}));scene.add(sun);
+  makePlayer();setBiome(0);
+  addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+  addEventListener('keydown',onKey);
+  let sx=0,sy=0;
+  addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>Math.abs(dy)){if(Math.abs(dx)>30)move(dx>0?1:-1)}else if(dy<-30)jump()},{passive:true});
+  loop()}
+
+function limb(w,h,c,x,y,z){const p=new THREE.Group();const m=new THREE.Mesh(new THREE.CylinderGeometry(w,w*.9,h,8),M(c));m.position.y=-h/2;m.castShadow=true;p.add(m);p.position.set(x,y,z);return p}
+function makePlayer(){
+  player=new THREE.Group();
+  const bd=new THREE.Mesh(new THREE.BoxGeometry(.85,.1,1.9),M(0xec4899,{metalness:.5,roughness:.3}));bd.position.y=.28;player.add(bd);
+  const neon=new THREE.Mesh(new THREE.BoxGeometry(.7,.04,1.7),new THREE.MeshBasicMaterial({color:0x38bdf8}));neon.position.y=.2;player.add(neon);
+  [[-.35,.7],[.35,.7],[-.35,-.7],[.35,-.7]].forEach(p=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.1,12),M(0xfacc15));w.rotation.z=Math.PI/2;w.position.set(p[0],.13,p[1]);player.add(w)});
+  boy=new THREE.Group();boy.position.y=.33;
+  const hood=M(0x6366f1),skin=M(0xf1c27d);
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(.28,.24,.75,10),hood);torso.position.y=.95;torso.castShadow=true;boy.add(torso);
+  const bag=new THREE.Mesh(new THREE.BoxGeometry(.4,.5,.2),M(0xf97316));bag.position.set(0,1,.27);boy.add(bag);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.26,20,20),skin);head.position.y=1.55;head.castShadow=true;boy.add(head);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.28,20,20,0,Math.PI*2,0,Math.PI*.55),M(0x2b1b12));hair.position.y=1.58;boy.add(hair);
+  const brim=new THREE.Mesh(new THREE.BoxGeometry(.34,.04,.3),M(0xef4444));brim.position.set(0,1.66,-.24);boy.add(brim);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.29,20,12,0,Math.PI*2,0,Math.PI*.4),M(0xef4444));cap.position.y=1.62;boy.add(cap);
+  [-.09,.09].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),new THREE.MeshBasicMaterial({color:0x111111}));e.position.set(x,1.55,-.24);boy.add(e)});
+  const sm=new THREE.Mesh(new THREE.TorusGeometry(.06,.012,6,12,Math.PI),new THREE.MeshBasicMaterial({color:0x7f1d1d}));sm.position.set(0,1.47,-.25);sm.rotation.z=Math.PI;boy.add(sm);
+  scarf=new THREE.Mesh(new THREE.BoxGeometry(.12,.08,.7),M(0xfbbf24));scarf.position.set(.15,1.3,.4);boy.add(scarf);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.27,.06,8,16),M(0xfbbf24));ring.rotation.x=Math.PI/2;ring.position.y=1.3;boy.add(ring);
+  aL=limb(.08,.6,0x6366f1,-.38,1.2,0);aR=limb(.08,.6,0x6366f1,.38,1.2,0);
+  lL=limb(.1,.65,0x1e293b,-.16,.65,.3);lR=limb(.1,.65,0x1e293b,.16,.65,-.3);
+  [lL,lR].forEach(l=>{const s=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.34),M(0xffffff));s.position.set(0,-.68,-.05);l.add(s)});
+  boy.add(aL,aR,lL,lR);player.add(boy);scene.add(player)}
+
+function spawnObs(){
+  const l=Math.floor(Math.random()*3),g=new THREE.Group();
+  const cols=[0xb91c1c,0x1d4ed8,0x15803d,0x7e22ce];
+  for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(1.3-i*.12,.28,.9),M(cols[(i+Math.floor(Math.random()*4))%4]));b.position.y=.16+i*.29;b.rotation.y=(Math.random()-.5)*.4;b.castShadow=true;g.add(b)}
+  g.position.set(LX[l],0,-95);scene.add(g);obs.push(g)}
+function spawnItem(){
+  const l=Math.floor(Math.random()*3);
+  const f=new THREE.Mesh(new THREE.ConeGeometry(.2,.9,8),M(0xf59e0b,{metalness:.8,roughness:.2,emissive:0x8a5a00}));
+  f.rotation.x=Math.PI;f.position.set(LX[l],1.3,-95);scene.add(f);items.push(f)}
+function spawnPortal(){
+  const g=new THREE.Group();
+  const r=new THREE.Mesh(new THREE.TorusGeometry(2.6,.14,16,40),new THREE.MeshBasicMaterial({color:0x06b6d4}));r.position.y=2.6;g.add(r);
+  const r2=new THREE.Mesh(new THREE.TorusGeometry(2.1,.06,12,40),new THREE.MeshBasicMaterial({color:0xa78bfa}));r2.position.y=2.6;g.add(r2);
+  g.position.set(0,0,-95);scene.add(g);portals.push(g)}
+
+let last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  const t=Date.now()*.01;
+  if(playing&&!paused){
+    speed=Math.min(.7,.35+dist/4000);
+    dist+=speed*.5;document.getElementById('ds').innerText=Math.floor(dist)+'m';
+    player.position.x+=(tx-player.position.x)*.15;
+    const lean=(tx-player.position.x);player.rotation.z=-lean*.12;player.rotation.y=-lean*.1;
+    if(py>0||vy>0){vy-=.018;py=Math.max(0,py+vy);if(py===0)vy=0}
+    player.position.y=py;
+    const air=py>0;
+    aL.rotation.x=air?-2:Math.sin(t)*.7;aR.rotation.x=air?-2:-Math.sin(t)*.7;
+    lL.rotation.x=air?.4:Math.sin(t)*.25;lR.rotation.x=air?-.3:-Math.sin(t)*.25;
+    boy.position.y=.33+Math.abs(Math.sin(t*.5))*.04;scarf.rotation.x=Math.sin(t*1.2)*.25;scarf.position.y=1.3+Math.sin(t*1.2)*.05;
+    sun.position.x+=0;
+    update();
+    if(Math.random()<.02)spawnObs();
+    if(Math.random()<.03)spawnItem();
+    if(Math.random()<.003&&!portals.length)spawnPortal();
+  }
+  ren.render(scene,cam)}
+
+function update(){
+  deco.forEach((d,i)=>{d.position.z+=speed;if(d.position.z>10){const x=d.position.x;scene.remove(d);
+    const o=bi===0?makeTree():makeBuilding();o.position.set(Math.sign(x)*(bi===0?7+Math.random()*9:9+Math.random()*3),0,-95);
+    if(bi===0)o.scale.setScalar(.8+Math.random()*.6);scene.add(o);deco[i]=o}});
+  for(let i=obs.length-1;i>=0;i--){const o=obs[i];o.position.z+=speed;
+    if(Math.abs(o.position.z-player.position.z)<.9&&Math.abs(o.position.x-player.position.x)<.9&&py<.75){scene.remove(o);obs.splice(i,1);hit();continue}
+    if(o.position.z>6){scene.remove(o);obs.splice(i,1)}}
+  for(let i=items.length-1;i>=0;i--){const f=items[i];f.position.z+=speed;f.rotation.y+=.06;
+    if(Math.abs(f.position.z-player.position.z)<.9&&Math.abs(f.position.x-player.position.x)<.9&&Math.abs(f.position.y-(player.position.y+1))<1.2){scene.remove(f);items.splice(i,1);score+=10;document.getElementById('sc').innerText=score;continue}
+    if(f.position.z>6){scene.remove(f);items.splice(i,1)}}
+  for(let i=portals.length-1;i>=0;i--){const p=portals[i];p.position.z+=speed;p.rotation.z+=.0;p.children[1].rotation.z+=.05;
+    if(Math.abs(p.position.z-player.position.z)<1){scene.remove(p);portals.splice(i,1);quiz();break}
+    if(p.position.z>6){scene.remove(p);portals.splice(i,1)}}}
+
+function move(d){if(!playing||paused)return;const n=lane+d;if(n<0||n>2)return;lane=n;tx=LX[lane]}
+function jump(){if(playing&&!paused&&py===0){vy=.28;py=.001}}
+function onKey(e){const k=e.key;
+  if(k==='ArrowLeft'||k==='a'||k==='A')move(-1);
+  else if(k==='ArrowRight'||k==='d'||k==='D')move(1);
+  else if(k===' '||k==='ArrowUp'||k==='w'||k==='W'){e.preventDefault();jump()}}
+
+function hit(){lives--;document.getElementById('lv').innerText='❤️'.repeat(Math.max(0,lives))||'💔';
+  if(lives<=0){playing=false;document.getElementById('st').innerText='¡Juego terminado!';
+    document.getElementById('ss').innerText='Recorriste '+Math.floor(dist)+' m y juntaste '+score+' puntos.';
+    document.getElementById('start').style.display='flex'}}
+
+function quiz(){
+  paused=true;
+  if(!qi.length)qi=Q.map((_,i)=>i).sort(()=>Math.random()-.5);
+  const q=Q[qi.pop()];
+  document.getElementById('qc').innerText=q[0];document.getElementById('qq').innerText=q[1];document.getElementById('fb').innerText='';
+  const c=document.getElementById('qo');c.innerHTML='';let done=false;
+  q[2].forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerText=o;
+    b.onclick=()=>{if(done)return;done=true;const f=document.getElementById('fb');
+      if(i===q[3]){f.style.color='#4ade80';f.innerText='¡Correcto! '+q[4];score+=50;document.getElementById('sc').innerText=score;setTimeout(close,1800)}
+      else{f.style.color='#f87171';f.innerText='Incorrecto. '+q[4];setTimeout(close,2800)}};
+    c.appendChild(b)});
+  document.getElementById('quiz').style.display='flex'}
+function close(){document.getElementById('quiz').style.display='none';setBiome((bi+1)%BIOMES.length);paused=false}
+
+function startGame(){
+  obs.forEach(o=>scene.remove(o));items.forEach(o=>scene.remove(o));portals.forEach(o=>scene.remove(o));obs=[];items=[];portals=[];
+  score=0;dist=0;lives=3;lane=1;tx=0;py=0;vy=0;speed=.35;player.position.set(0,0,0);qi=[];
+  document.getElementById('sc').innerText='0';document.getElementById('ds').innerText='0m';document.getElementById('lv').innerText='❤️❤️❤️';
+  setBiome(0);document.getElementById('start').style.display='none';playing=true;paused=false}
+
+window.onload=init;
+</script>
+</body>
+</html>
